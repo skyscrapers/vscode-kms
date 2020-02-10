@@ -2,8 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as AWS from 'aws-sdk';
-import Window = vscode.window;
-import Range = vscode.Range;
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,33 +14,39 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('"vscode-kms" is now active!');
 
 	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsdecrypt', async () => {
-		var aws = await createAWSConfig()
-		decrypt(aws);
+		decrypt();
 	}));
 }
 
-async function createAWSConfig() {
+async function createAWSConfig(): Promise<AWS.Config | undefined> {
 	const defaultProfile = vscode.workspace.getConfiguration().get("vscode-kms.awsProfile", undefined);
 	var selectedProfile;
 
 	if (!defaultProfile) {
 		var awsCredentials = ini.parse(fs.readFileSync(getAWSCredentialsDefaultFilePath(), 'utf-8'));
-		selectedProfile = await Window.showQuickPick(Object.keys(awsCredentials), {
+		selectedProfile = await vscode.window.showQuickPick(Object.keys(awsCredentials), {
 			placeHolder: 'Input the AWS profile to use. Leave empty to use your default credentials'
 		});
+
+		if (selectedProfile === undefined) {
+			return undefined;
+	}
 	}
 
 	var credentials = new AWS.SharedIniFileCredentials({
-		profile: defaultProfile | selectedProfile
+		profile: defaultProfile || selectedProfile
 	});
 	var config = new AWS.Config({ credentials: credentials });
-	if (config.region == undefined) config.region = vscode.workspace.getConfiguration().get("vscode-kms.defaultRegion", undefined);
+	if (config.region === undefined) {
+		config.region = vscode.workspace.getConfiguration().get("vscode-kms.defaultRegion", undefined);
+	}
 	return config;
 }
 
 function getAWSCredentialsDefaultFilePath() {
+	var homeDir = getHomeDir() || "";
 	return path.join(
-		getHomeDir(),
+		homeDir,
 		'.aws',
 		'credentials'
 	);
@@ -70,20 +74,60 @@ function emptySelection(ranges: vscode.Range[]) {
 }
 
 function selectAll(doc: vscode.TextDocument) {
-	return doc.validateRange(new Range(0, 0, Infinity, Infinity));
+	return doc.validateRange(new vscode.Range(0, 0, Infinity, Infinity));
 }
 
-function decrypt(config: AWS.Config) {
-	const editor = Window.activeTextEditor;
-	if (editor == undefined) {
-		vscode.window.showErrorMessage('No active window')
+async function askEncryptionContext(): Promise<AWS.KMS.EncryptionContextType | undefined> {
+	var encryptionContextRaw = await vscode.window.showInputBox({
+		placeHolder: 'Encryption context: key=value',
+		prompt: 'Input the encryption context to use. Leave empty to not use any encryption context. Press ESC to cancel the operation.',
+		validateInput: value => {
+			if (value.length > 0 && value.split('=').length !== 2) {
+				return 'Encryption context must follow the format "key=value"';
+			}
+			return null;
+		}
+	});
+
+	if (encryptionContextRaw === undefined) {
+		return undefined;
+	}
+
+	var encryptionContext: AWS.KMS.EncryptionContextType = {};
+
+	if (encryptionContextRaw) {
+		var e = encryptionContextRaw.split('=');
+		encryptionContext[e[0]] = e[1];
+	}
+
+	return encryptionContext;
+}
+
+async function decrypt() {
+	const editor = vscode.window.activeTextEditor;
+	if (editor === undefined) {
+		vscode.window.showErrorMessage('No active window');
+		return;
+	}
+
+	var awsConfig = await createAWSConfig();
+
+	if (awsConfig === undefined) {
+		console.log('Decrypt operation cancelled');
+		return;
+}
+
+	var encryptionContext = await askEncryptionContext();
+
+	if (encryptionContext === undefined) {
+		console.log('Decrypt operation cancelled');
 		return;
 	}
 
 	const doc = editor.document;
-	var kms = new AWS.KMS(config);
+	var kms = new AWS.KMS(awsConfig);
 
-	let ranges = editor.selections.map((s) => new Range(s.start, s.end));
+	let ranges = editor.selections.map((s) => new vscode.Range(s.start, s.end));
 	if (emptySelection(ranges)) {
 		ranges = [selectAll(doc)];
 	}
@@ -91,9 +135,7 @@ function decrypt(config: AWS.Config) {
 	ranges.forEach((range) => {
 		kms.decrypt({
 			CiphertextBlob: Buffer.from(doc.getText(range), 'base64'),
-			EncryptionContext: {
-				k8s_stack: 'secrets'
-			}
+			EncryptionContext: encryptionContext
 		}, (err, data) => {
 			if (err) {
 				console.error(err, err.stack);
@@ -101,9 +143,9 @@ function decrypt(config: AWS.Config) {
 			} else {
 				editor.edit(function (edit) {
 					edit.replace(range, Buffer.from(data.Plaintext, 'base64').toString());
-				})
+				});
 			}
-		})
+		});
 	});
 }
 
