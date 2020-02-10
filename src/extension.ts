@@ -16,6 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsdecrypt', async () => {
 		decrypt();
 	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsencrypt', async () => {
+		encrypt();
+	}));
 }
 
 async function createAWSConfig(): Promise<AWS.Config | undefined> {
@@ -30,7 +34,7 @@ async function createAWSConfig(): Promise<AWS.Config | undefined> {
 
 		if (selectedProfile === undefined) {
 			return undefined;
-	}
+		}
 	}
 
 	var credentials = new AWS.SharedIniFileCredentials({
@@ -103,6 +107,16 @@ async function askEncryptionContext(): Promise<AWS.KMS.EncryptionContextType | u
 	return encryptionContext;
 }
 
+async function askKmsKeyId(): Promise<string | undefined> {
+	return vscode.window.showInputBox({
+		placeHolder: 'f12345aa-098e-456b-b1b2-876434a09876',
+		prompt: 'Input the encryption key id or ARN to use. Press ESC to cancel the operation.',
+		validateInput: value => {
+			return value.length === 0 ? "Can't be empty" : null;
+		}
+	});
+}
+
 async function decrypt() {
 	const editor = vscode.window.activeTextEditor;
 	if (editor === undefined) {
@@ -115,7 +129,7 @@ async function decrypt() {
 	if (awsConfig === undefined) {
 		console.log('Decrypt operation cancelled');
 		return;
-}
+	}
 
 	var encryptionContext = await askEncryptionContext();
 
@@ -143,6 +157,60 @@ async function decrypt() {
 			} else {
 				editor.edit(function (edit) {
 					edit.replace(range, Buffer.from(data.Plaintext, 'base64').toString());
+				});
+			}
+		});
+	});
+}
+
+async function encrypt() {
+	const editor = vscode.window.activeTextEditor;
+	if (editor === undefined) {
+		vscode.window.showErrorMessage('No active window');
+		return;
+	}
+
+	var awsConfig = await createAWSConfig();
+
+	if (awsConfig === undefined) {
+		console.log('Decrypt operation cancelled');
+		return;
+	}
+
+	var encryptionContext = await askEncryptionContext();
+
+	if (encryptionContext === undefined) {
+		console.log('Decrypt operation cancelled');
+		return;
+	}
+
+	var kmsKeyId = await askKmsKeyId();
+
+	if (kmsKeyId === undefined) {
+		console.log('Decrypt operation cancelled');
+		return;
+	}
+
+	const doc = editor.document;
+	var kms = new AWS.KMS(awsConfig);
+
+	let ranges = editor.selections.map((s) => new vscode.Range(s.start, s.end));
+	if (emptySelection(ranges)) {
+		ranges = [selectAll(doc)];
+	}
+
+	ranges.forEach((range) => {
+		kms.encrypt({
+			Plaintext: doc.getText(range),
+			EncryptionContext: encryptionContext,
+			KeyId: kmsKeyId
+		}, (err, data) => {
+			if (err) {
+				console.error(err, err.stack);
+				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
+			} else {
+				editor.edit((edit) => {
+					edit.replace(range, data.CiphertextBlob.toString('base64'));
 				});
 			}
 		});

@@ -10,7 +10,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.kmsdecrypt"
+		"onCommand:extension.kmsdecrypt",
+		"onCommand:extension.kmsencrypt"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -18,6 +19,10 @@
 			{
 				"command": "extension.kmsdecrypt",
 				"title": "KMS Decrypt"
+			},
+			{
+				"command": "extension.kmsencrypt",
+				"title": "KMS Encrypt"
 			}
 		],
 		"configuration": [
