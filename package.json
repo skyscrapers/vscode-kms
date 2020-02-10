@@ -43,8 +43,8 @@
 							}
 						},
 						"default": {
-							"vscode-kms.defaultRegion": "",
-							"vscode-kms.awsProfile": ""
+							"vscode-kms.defaultRegion": null,
+							"vscode-kms.awsProfile": null
 						}
 					}
 				}
