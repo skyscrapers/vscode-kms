@@ -27,7 +27,7 @@
 		],
 		"configuration": [
 			{
-				"title": "VSCode KMS Configuration",
+				"title": "VSCode KMS",
 				"type": "object",
 				"properties": {
 					"vscode-kms": {
@@ -73,6 +73,7 @@
 		"vscode-test": "^1.3.0"
 	},
 	"dependencies": {
+		"@types/ini": "^1.3.30",
 		"aws-sdk": "^2.612.0",
 		"ini": "^1.3.5"
 	}
