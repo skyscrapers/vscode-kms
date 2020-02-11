@@ -156,7 +156,7 @@ async function decrypt() {
 				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
 			} else if (data && data.Plaintext) {
 				editor.edit((edit) => {
-					edit.replace(range, Buffer.from(data.Plaintext, 'base64').toString());
+					edit.replace(range, Buffer.from(data.Plaintext.toString(), 'base64').toString());
 				});
 			}
 		});
