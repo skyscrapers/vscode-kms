@@ -154,8 +154,8 @@ async function decrypt() {
 			if (err) {
 				console.error(err, err.stack);
 				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
-			} else {
-				editor.edit(function (edit) {
+			} else if (data && data.Plaintext) {
+				editor.edit((edit) => {
 					edit.replace(range, Buffer.from(data.Plaintext, 'base64').toString());
 				});
 			}
@@ -184,7 +184,7 @@ async function encrypt() {
 		return;
 	}
 
-	var kmsKeyId = await askKmsKeyId();
+	const kmsKeyId = await askKmsKeyId();
 
 	if (kmsKeyId === undefined) {
 		console.log('Decrypt operation cancelled');
@@ -208,7 +208,7 @@ async function encrypt() {
 			if (err) {
 				console.error(err, err.stack);
 				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
-			} else {
+			} else if (data.CiphertextBlob) {
 				editor.edit((edit) => {
 					edit.replace(range, data.CiphertextBlob.toString('base64'));
 				});
