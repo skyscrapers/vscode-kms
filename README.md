@@ -12,6 +12,10 @@ The decryption operation works similarly, just select the encrypted text and cal
 
 You'll need your AWS credentials correctly configured in your system as if it were the AWS CLI.
 
+## Installation
+
+This is not a public extension yet. To install it, you need to download the `.vsix` file from the [releases page](https://github.com/skyscrapers/vscode-kms/releases) of the extension repo. Then you can load it into VSCode either via the command line or the extensions UI. Follow [these instructions](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).
+
 ## Extension Settings
 
 This extension contributes the following settings:
