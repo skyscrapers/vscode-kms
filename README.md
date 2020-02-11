@@ -27,6 +27,11 @@ This extension contributes the following settings:
 
 --
 
+## TODO
+
+* [ ] Add some caching mechanism for profiles and encryption contexts
+* [ ] Add progress bar message
+
 ## Release Notes
 
 ### 0.1.0
