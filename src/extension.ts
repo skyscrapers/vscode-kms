@@ -117,6 +117,39 @@ async function askKmsKeyId(): Promise<string | undefined> {
 	});
 }
 
+function decryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocument, encryptionContext: AWS.KMS.EncryptionContextType): Promise<[vscode.Range, AWS.KMS.DecryptResponse]> {
+	return new Promise((resolve, reject) => {
+		kms.decrypt({
+			CiphertextBlob: Buffer.from(doc.getText(range), 'base64'),
+			EncryptionContext: encryptionContext
+		}, (err, data) => {
+			if (err) {
+				console.error(err, err.stack);
+				reject(err);
+			} else {
+				resolve([range, data]);
+			}
+		});
+	});
+}
+
+function encryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocument, encryptionContext: AWS.KMS.EncryptionContextType, kmsKeyId: string): Promise<[vscode.Range, AWS.KMS.EncryptResponse]> {
+	return new Promise((resolve, reject) => {
+		kms.encrypt({
+			Plaintext: doc.getText(range),
+			EncryptionContext: encryptionContext,
+			KeyId: kmsKeyId
+		}, (err, data) => {
+			if (err) {
+				console.error(err, err.stack);
+				reject(err);
+			} else {
+				resolve([range, data]);
+			}
+		});
+	});
+}
+
 async function decrypt() {
 	const editor = vscode.window.activeTextEditor;
 	if (editor === undefined) {
@@ -146,20 +179,16 @@ async function decrypt() {
 		ranges = [selectAll(doc)];
 	}
 
-	ranges.forEach((range) => {
-		kms.decrypt({
-			CiphertextBlob: Buffer.from(doc.getText(range), 'base64'),
-			EncryptionContext: encryptionContext
-		}, (err, data) => {
-			if (err) {
-				console.error(err, err.stack);
-				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
-			} else if (data && data.Plaintext) {
-				editor.edit((edit) => {
-					edit.replace(range, data.Plaintext.toString());
-				});
-			}
+	Promise.all(ranges.map((range) => {
+		return decryptRange(range, kms, doc, encryptionContext);
+	})).then((data) => {
+		editor.edit((edit) => {
+			data.forEach(([range, decryptedData]) => {
+				decryptedData && decryptedData.Plaintext && edit.replace(range, decryptedData.Plaintext.toString());
+			});
 		});
+	}).catch((reason) => {
+		vscode.window.showErrorMessage('An error occurred when running the decrypt command');
 	});
 }
 
@@ -199,21 +228,16 @@ async function encrypt() {
 		ranges = [selectAll(doc)];
 	}
 
-	ranges.forEach((range) => {
-		kms.encrypt({
-			Plaintext: doc.getText(range),
-			EncryptionContext: encryptionContext,
-			KeyId: kmsKeyId
-		}, (err, data) => {
-			if (err) {
-				console.error(err, err.stack);
-				vscode.window.showErrorMessage('An error occurred when running the decrypt command');
-			} else if (data.CiphertextBlob) {
-				editor.edit((edit) => {
-					edit.replace(range, data.CiphertextBlob.toString('base64'));
-				});
-			}
+	Promise.all(ranges.map((range) => {
+		return encryptRange(range, kms, doc, encryptionContext, kmsKeyId);
+	})).then((data) => {
+		editor.edit((edit) => {
+			data.forEach(([range, encryptedData]) => {
+				encryptedData && encryptedData.CiphertextBlob && edit.replace(range, encryptedData.CiphertextBlob.toString('base64'));
+			});
 		});
+	}).catch((reason) => {
+		vscode.window.showErrorMessage('An error occurred when running the encrypt command');
 	});
 }
 
