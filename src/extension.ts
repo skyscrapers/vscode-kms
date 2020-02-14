@@ -7,24 +7,21 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ini from 'ini';
 
+export let outputChannel = vscode.window.createOutputChannel('VSCode KMS');
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	console.log('"vscode-kms" is now active!');
+	outputChannel.appendLine('"vscode-kms" is now active!');
 
-	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsdecrypt', async () => {
-		decrypt();
-	}));
-
-	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsencrypt', async () => {
-		encrypt();
-	}));
+	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsdecrypt', decrypt));
+	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsencrypt', encrypt));
 }
 
 async function createAWSConfig(): Promise<AWS.Config | undefined> {
 	const defaultProfile = vscode.workspace.getConfiguration().get("vscode-kms.awsProfile", undefined);
-	var selectedProfile;
+	var selectedProfile: string | undefined;
 
 	if (!defaultProfile) {
 		var awsCredentials = ini.parse(fs.readFileSync(getAWSCredentialsDefaultFilePath(), 'utf-8'));
@@ -49,11 +46,7 @@ async function createAWSConfig(): Promise<AWS.Config | undefined> {
 
 function getAWSCredentialsDefaultFilePath() {
 	var homeDir = getHomeDir() || "";
-	return path.join(
-		homeDir,
-		'.aws',
-		'credentials'
-	);
+	return path.join(homeDir, '.aws', 'credentials');
 }
 
 function getHomeDir() {
@@ -124,7 +117,7 @@ function decryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocumen
 			EncryptionContext: encryptionContext
 		}, (err, data) => {
 			if (err) {
-				console.error(err, err.stack);
+				outputChannel.appendLine('ERROR: ' + err);
 				reject(err);
 			} else {
 				resolve([range, data]);
@@ -141,7 +134,7 @@ function encryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocumen
 			KeyId: kmsKeyId
 		}, (err, data) => {
 			if (err) {
-				console.error(err, err.stack);
+				outputChannel.appendLine('ERROR: ' + err);
 				reject(err);
 			} else {
 				resolve([range, data]);
@@ -160,14 +153,14 @@ async function decrypt() {
 	var awsConfig = await createAWSConfig();
 
 	if (awsConfig === undefined) {
-		console.log('Decrypt operation cancelled');
+		outputChannel.appendLine('Decrypt operation cancelled');
 		return;
 	}
 
 	var encryptionContext = await askEncryptionContext();
 
 	if (encryptionContext === undefined) {
-		console.log('Decrypt operation cancelled');
+		outputChannel.appendLine('Decrypt operation cancelled');
 		return;
 	}
 
@@ -202,21 +195,21 @@ async function encrypt() {
 	var awsConfig = await createAWSConfig();
 
 	if (awsConfig === undefined) {
-		console.log('Decrypt operation cancelled');
+		outputChannel.appendLine('Encrypt operation cancelled');
 		return;
 	}
 
 	var encryptionContext = await askEncryptionContext();
 
 	if (encryptionContext === undefined) {
-		console.log('Decrypt operation cancelled');
+		outputChannel.appendLine('Encrypt operation cancelled');
 		return;
 	}
 
 	const kmsKeyId = await askKmsKeyId();
 
 	if (kmsKeyId === undefined) {
-		console.log('Decrypt operation cancelled');
+		outputChannel.appendLine('Encrypt operation cancelled');
 		return;
 	}
 
