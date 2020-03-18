@@ -34,6 +34,4 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 0.1.0
-
-Initial release.
+See the [releases page](https://github.com/skyscrapers/vscode-kms/releases).
