@@ -14,7 +14,7 @@ You'll need your AWS credentials correctly configured in your system as if it we
 
 ## Installation
 
-This is not a public extension yet. To install it, you need to download the `.vsix` file from the [releases page](https://github.com/skyscrapers/vscode-kms/releases) of the extension repo. Then you can load it into VSCode either via the command line or the extensions UI. Follow [these instructions](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).
+This extension is available in the VSCode Extensions Marketplace, [here](https://marketplace.visualstudio.com/items?itemName=Skyscrapers.vscode-kms).
 
 ## Extension Settings
 
