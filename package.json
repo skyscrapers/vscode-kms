@@ -9,7 +9,7 @@
 		"url": "https://github.com/skyscrapers/vscode-kms.git"
 	},
 	"engines": {
-		"vscode": "^1.41.0"
+		"vscode": "^1.43.0"
 	},
 	"categories": [
 		"Other"
