@@ -2,7 +2,9 @@
 
 All notable changes to the "vscode-kms" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## 0.2.0
+
+The extension now also loads all the AWS profiles configured in the AWS CLI config file.
 
 ## 0.1.3
 
