@@ -24,13 +24,21 @@ async function createAWSConfig(): Promise<AWS.Config | undefined> {
 	var selectedProfile: string | undefined;
 
 	if (!defaultProfile) {
-		var awsCredentials = Object.keys(ini.parse(fs.readFileSync(getAWSCredentialsDefaultFilePath(), 'utf-8')));
-		// Merge the profiles from the aws config file
-		var awsConfigProfiles = Object.keys(ini.parse(fs.readFileSync(getAWSConfigDefaultFilePath(), 'utf-8')));
-		awsConfigProfiles = awsConfigProfiles.map(function (profile) {
-			return profile.replace(/^profile /i, '') // In the aws config file, profiles are prefixed with "profile "
-		});
-		selectedProfile = await vscode.window.showQuickPick(awsCredentials.concat(awsConfigProfiles), {
+		var awsProfiles = [];
+		var awsCredentialsFilePath = getAWSCredentialsDefaultFilePath();
+		if (fs.existsSync(awsCredentialsFilePath)) {
+			awsProfiles = awsProfiles.concat(Object.keys(ini.parse(fs.readFileSync(awsCredentialsFilePath, 'utf-8'))));
+		}
+
+		var awsConfigFilePath = getAWSConfigDefaultFilePath();
+		if (fs.existsSync(awsConfigFilePath)) {
+			awsProfiles = awsProfiles.concat(Object.keys(ini.parse(fs.readFileSync(awsConfigFilePath, 'utf-8'))).map(function (profile) {
+				return profile.replace(/^profile /i, ''); // In the aws config file, profiles are prefixed with "profile "
+			}));
+		}
+
+		// Show all the available profiles from both config and credentials files
+		selectedProfile = await vscode.window.showQuickPick(awsProfiles, {
 			placeHolder: 'Input the AWS profile to use. Leave empty to use your default credentials'
 		});
 
