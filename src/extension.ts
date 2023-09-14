@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ini from 'ini';
 
+
 export let outputChannel = vscode.window.createOutputChannel('VSCode KMS');
 
 // this method is called when your extension is activated
@@ -88,6 +89,8 @@ function selectAll(doc: vscode.TextDocument) {
 	return doc.validateRange(new vscode.Range(0, 0, Infinity, Infinity));
 }
 
+
+// @ts-ignore as EncryptRequest is not recognised
 async function askEncryptionContext(): Promise<KMS.EncryptRequest.EncryptionContext | undefined> {
 	var encryptionContextRaw = await vscode.window.showInputBox({
 		placeHolder: 'Encryption context: key=value',
@@ -106,6 +109,7 @@ async function askEncryptionContext(): Promise<KMS.EncryptRequest.EncryptionCont
 		return undefined;
 	}
 
+	// @ts-ignore as EncryptRequest is not recognised
 	var encryptionContext: KMS.EncryptRequest.EncryptionContext = {};
 
 	if (encryptionContextRaw) {
@@ -127,6 +131,7 @@ async function askKmsKeyId(): Promise<string | undefined> {
 	});
 }
 
+// @ts-ignore as EncryptRequest is not recognised
 function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext): Promise<[vscode.Range, KMS.DecryptResponse]> {
 	return new Promise((resolve, reject) => {
 		const command = new KMS.DecryptCommand({
@@ -144,6 +149,7 @@ function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode
 	});
 }
 
+// @ts-ignore as EncryptRequest is not recognised
 function encryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext, kmsKeyId: string): Promise<[vscode.Range, KMS.EncryptResponse]> {
 	return new Promise((resolve, reject) => {
 		const command = new KMS.EncryptCommand({
