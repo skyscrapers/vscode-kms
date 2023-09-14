@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as AWS from 'aws-sdk';
+import * as KMS from "@aws-sdk/client-kms"; // ES6 import
+import { fromIni } from "@aws-sdk/credential-providers";
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -19,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('extension.kmsencrypt', encrypt));
 }
 
-async function createAWSConfig(): Promise<AWS.Config | undefined> {
+async function createKmsClient(): Promise<KMS.KMSClient | undefined> {
 	const defaultProfile = vscode.workspace.getConfiguration().get("vscode-kms.awsProfile", undefined);
 	var selectedProfile: string | undefined;
 
@@ -47,13 +48,9 @@ async function createAWSConfig(): Promise<AWS.Config | undefined> {
 		}
 	}
 
-	process.env.AWS_SDK_LOAD_CONFIG = '1';
 	process.env.AWS_PROFILE = defaultProfile || selectedProfile;
-	var config = new AWS.Config();
-	if (config.region === undefined) {
-		config.region = vscode.workspace.getConfiguration().get("vscode-kms.defaultRegion", undefined);
-	}
-	return config;
+	process.env.AWS_SDK_LOAD_CONFIG = '1';
+	return new KMS.KMSClient();
 }
 
 function getAWSCredentialsDefaultFilePath() {
@@ -91,7 +88,7 @@ function selectAll(doc: vscode.TextDocument) {
 	return doc.validateRange(new vscode.Range(0, 0, Infinity, Infinity));
 }
 
-async function askEncryptionContext(): Promise<AWS.KMS.EncryptionContextType | undefined> {
+async function askEncryptionContext(): Promise<KMS.EncryptRequest.EncryptionContext | undefined> {
 	var encryptionContextRaw = await vscode.window.showInputBox({
 		placeHolder: 'Encryption context: key=value',
 		prompt: 'Input the encryption context to use. Leave empty to not use any encryption context. Press ESC to cancel the operation.',
@@ -100,14 +97,16 @@ async function askEncryptionContext(): Promise<AWS.KMS.EncryptionContextType | u
 				return 'Encryption context must follow the format "key=value"';
 			}
 			return null;
-		}
+		},
+		ignoreFocusOut: true,
+		value: vscode.workspace.getConfiguration().get("vscode-kms.defaultEncryptionContext", undefined)
 	});
 
 	if (encryptionContextRaw === undefined) {
 		return undefined;
 	}
 
-	var encryptionContext: AWS.KMS.EncryptionContextType = {};
+	var encryptionContext: KMS.EncryptRequest.EncryptionContext = {};
 
 	if (encryptionContextRaw) {
 		var e = encryptionContextRaw.split('=');
@@ -123,16 +122,18 @@ async function askKmsKeyId(): Promise<string | undefined> {
 		prompt: 'Input the encryption key id or ARN to use. Press ESC to cancel the operation.',
 		validateInput: value => {
 			return value.length === 0 ? "Can't be empty" : null;
-		}
+		},
+		ignoreFocusOut: true
 	});
 }
 
-function decryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocument, encryptionContext: AWS.KMS.EncryptionContextType): Promise<[vscode.Range, AWS.KMS.DecryptResponse]> {
+function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext): Promise<[vscode.Range, KMS.DecryptResponse]> {
 	return new Promise((resolve, reject) => {
-		kms.decrypt({
+		const command = new KMS.DecryptCommand({
 			CiphertextBlob: Buffer.from(doc.getText(range), 'base64'),
 			EncryptionContext: encryptionContext
-		}, (err, data) => {
+		});
+		kmsClient.send(command, (err, data) => {
 			if (err) {
 				outputChannel.appendLine('ERROR: ' + err);
 				reject(err);
@@ -143,13 +144,14 @@ function decryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocumen
 	});
 }
 
-function encryptRange(range: vscode.Range, kms: AWS.KMS, doc: vscode.TextDocument, encryptionContext: AWS.KMS.EncryptionContextType, kmsKeyId: string): Promise<[vscode.Range, AWS.KMS.EncryptResponse]> {
+function encryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext, kmsKeyId: string): Promise<[vscode.Range, KMS.EncryptResponse]> {
 	return new Promise((resolve, reject) => {
-		kms.encrypt({
-			Plaintext: doc.getText(range),
+		const command = new KMS.EncryptCommand({
+			Plaintext: Buffer.from(doc.getText(range)),
 			EncryptionContext: encryptionContext,
 			KeyId: kmsKeyId
-		}, (err, data) => {
+		});
+		kmsClient.send(command, (err, data) => {
 			if (err) {
 				outputChannel.appendLine('ERROR: ' + err);
 				reject(err);
@@ -167,9 +169,9 @@ async function decrypt() {
 		return;
 	}
 
-	var awsConfig = await createAWSConfig();
+	var kmsClient = await createKmsClient();
 
-	if (awsConfig === undefined) {
+	if (kmsClient === undefined) {
 		outputChannel.appendLine('Decrypt operation cancelled');
 		return;
 	}
@@ -182,7 +184,6 @@ async function decrypt() {
 	}
 
 	const doc = editor.document;
-	var kms = new AWS.KMS(awsConfig);
 
 	let ranges = editor.selections.map((s) => new vscode.Range(s.start, s.end));
 	if (emptySelection(ranges)) {
@@ -190,11 +191,11 @@ async function decrypt() {
 	}
 
 	Promise.all(ranges.map((range) => {
-		return decryptRange(range, kms, doc, encryptionContext);
+		return decryptRange(range, kmsClient, doc, encryptionContext);
 	})).then((data) => {
 		editor.edit((edit) => {
 			data.forEach(([range, decryptedData]) => {
-				decryptedData && decryptedData.Plaintext && edit.replace(range, decryptedData.Plaintext.toString());
+				decryptedData && decryptedData.Plaintext && edit.replace(range, Buffer.from(decryptedData.Plaintext).toString());
 			});
 		});
 	}).catch((reason) => {
@@ -209,9 +210,9 @@ async function encrypt() {
 		return;
 	}
 
-	var awsConfig = await createAWSConfig();
+	var kmsClient = await createKmsClient();
 
-	if (awsConfig === undefined) {
+	if (kmsClient === undefined) {
 		outputChannel.appendLine('Encrypt operation cancelled');
 		return;
 	}
@@ -231,7 +232,6 @@ async function encrypt() {
 	}
 
 	const doc = editor.document;
-	var kms = new AWS.KMS(awsConfig);
 
 	let ranges = editor.selections.map((s) => new vscode.Range(s.start, s.end));
 	if (emptySelection(ranges)) {
@@ -239,11 +239,11 @@ async function encrypt() {
 	}
 
 	Promise.all(ranges.map((range) => {
-		return encryptRange(range, kms, doc, encryptionContext, kmsKeyId);
+		return encryptRange(range, kmsClient, doc, encryptionContext, kmsKeyId);
 	})).then((data) => {
 		editor.edit((edit) => {
 			data.forEach(([range, encryptedData]) => {
-				encryptedData && encryptedData.CiphertextBlob && edit.replace(range, encryptedData.CiphertextBlob.toString('base64'));
+				encryptedData && encryptedData.CiphertextBlob && edit.replace(range, Buffer.from(encryptedData.CiphertextBlob).toString('base64'));
 			});
 		});
 	}).catch((reason) => {
