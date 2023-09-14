@@ -2,7 +2,7 @@
 	"name": "vscode-kms",
 	"displayName": "vscode-kms",
 	"description": "Encrypt and decrypt with AWS KMS",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"publisher": "skyscrapers-engineering",
 	"repository": {
 		"type": "git",
