@@ -40,7 +40,7 @@ See the [releases page](https://github.com/skyscrapers/vscode-kms/releases).
 
 ### Local development
 
-If you want to make changes to to this module you can check out the source code locally and run the extention in VSCode by opening the repo in VSCode and Pressing F5 or launching it from the `Run and Debug` menu on the left side.
+If you want to make changes to to this module you can check out the source code locally and run the extention in VSCode by opening the repo in VSCode, running `npm install` and Pressing F5 or launching it from the `Run and Debug` menu on the left side.
 
 Valuable output is reported in the `OUTPUT` and `DEBUG CONSOLE` at the bottom.
 
@@ -52,6 +52,7 @@ Once the extention is tested and ready to export you need to run the following c
 
 ```bash
 $ cd vscode-kms
+$ npm install -g @vscode/vsce
 $ vsce package
 # vscode-kms.vsix generated
 $ vsce publish
