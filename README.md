@@ -21,7 +21,7 @@ This extension is available in the VSCode Extensions Marketplace, [here](https:/
 This extension contributes the following settings:
 
 * `vscode-kms.awsProfile`: Profile to use from the AWS local credentials or config file. Will ask on every operation if not set.
-* `vscode-kms.defaultRegion`: Default AWS region to use. This will only be used if there is no system default or a default set in the used profile.
+* `vscode-kms.defaultEncryptionContext`: Default KMS encryption to use for encrypting, e.g. foo=bar
 
 ## Known Issues
 
@@ -35,3 +35,31 @@ This extension contributes the following settings:
 ## Release Notes
 
 See the [releases page](https://github.com/skyscrapers/vscode-kms/releases).
+
+## Development
+
+### Local development
+
+If you want to make changes to to this module you can check out the source code locally and run the extention in VSCode by opening the repo in VSCode and Pressing F5 or launching it from the `Run and Debug` menu on the left side.
+
+Valuable output is reported in the `OUTPUT` and `DEBUG CONSOLE` at the bottom.
+
+More info: <https://code.visualstudio.com/api/working-with-extensions/testing-extension#debugging-the-tests>
+
+### Publising
+
+Once the extention is tested and ready to export you need to run the following commands:
+
+```bash
+$ cd vscode-kms
+$ vsce package
+# vscode-kms.vsix generated
+$ vsce publish
+# skyscrapers.vscode-kms published to VS Code Marketplace
+```
+
+The publish command requires a token which you can find in [this portal](https://dev.azure.com/Skyscrapers/_usersSettings/tokens).
+
+After its published you can
+
+More info: <https://code.visualstudio.com/api/working-with-extensions/publishing-extension>
