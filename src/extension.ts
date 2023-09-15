@@ -2,7 +2,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as KMS from "@aws-sdk/client-kms"; // ES6 import
-import { fromIni } from "@aws-sdk/credential-providers";
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
