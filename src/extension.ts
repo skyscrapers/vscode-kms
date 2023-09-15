@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as KMS from "@aws-sdk/client-kms"; // ES6 import
+import * as KMS from "@aws-sdk/client-kms";
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -89,8 +89,7 @@ function selectAll(doc: vscode.TextDocument) {
 }
 
 
-// @ts-ignore as EncryptRequest is not recognised
-async function askEncryptionContext(): Promise<KMS.EncryptRequest.EncryptionContext | undefined> {
+async function askEncryptionContext(): Promise<KMS.EncryptRequest["EncryptionContext"] | undefined> {
 	var encryptionContextRaw = await vscode.window.showInputBox({
 		placeHolder: 'Encryption context: key=value',
 		prompt: 'Input the encryption context to use. Leave empty to not use any encryption context. Press ESC to cancel the operation.',
@@ -108,8 +107,7 @@ async function askEncryptionContext(): Promise<KMS.EncryptRequest.EncryptionCont
 		return undefined;
 	}
 
-	// @ts-ignore as EncryptRequest is not recognised
-	var encryptionContext: KMS.EncryptRequest.EncryptionContext = {};
+	var encryptionContext: KMS.EncryptRequest["EncryptionContext"] = {};
 
 	if (encryptionContextRaw) {
 		var e = encryptionContextRaw.split('=');
@@ -130,8 +128,7 @@ async function askKmsKeyId(): Promise<string | undefined> {
 	});
 }
 
-// @ts-ignore as EncryptRequest is not recognised
-function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext): Promise<[vscode.Range, KMS.DecryptResponse]> {
+function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest["EncryptionContext"]): Promise<[vscode.Range, KMS.DecryptResponse]> {
 	return new Promise((resolve, reject) => {
 		const command = new KMS.DecryptCommand({
 			CiphertextBlob: Buffer.from(doc.getText(range), 'base64'),
@@ -148,8 +145,7 @@ function decryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode
 	});
 }
 
-// @ts-ignore as EncryptRequest is not recognised
-function encryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest.EncryptionContext, kmsKeyId: string): Promise<[vscode.Range, KMS.EncryptResponse]> {
+function encryptRange(range: vscode.Range, kmsClient: KMS.KMSClient, doc: vscode.TextDocument, encryptionContext: KMS.EncryptRequest["EncryptionContext"], kmsKeyId: string): Promise<[vscode.Range, KMS.EncryptResponse]> {
 	return new Promise((resolve, reject) => {
 		const command = new KMS.EncryptCommand({
 			Plaintext: Buffer.from(doc.getText(range)),
