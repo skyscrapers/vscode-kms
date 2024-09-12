@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-kms" extension will be documented in this file.
 
+## 0.4.0
+
+Updates to dependencies and fixes an issue when using AWS SSO.
+
 ## 0.3.0
 
 The extention is updated to be compatible with `source_profile` in the `~/.aws/config` file. This was done by upgrading to the newer V3 of the AWS sdk.
