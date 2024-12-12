@@ -9,14 +9,10 @@
 		"url": "https://github.com/skyscrapers/vscode-kms.git"
 	},
 	"engines": {
-		"vscode": "^1.71.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
-	],
-	"activationEvents": [
-		"onCommand:extension.kmsdecrypt",
-		"onCommand:extension.kmsencrypt"
 	],
 	"main": "./out/extension.js",
 	"license": "Apache-2.0",

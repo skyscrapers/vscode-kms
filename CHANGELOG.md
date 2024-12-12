@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-kms" extension will be documented in this file.
 
+## 0.4.1
+
+Cleanup of deprecated activationEvents.
+
 ## 0.4.0
 
 Updates to dependencies and fixes an issue when using AWS SSO.
