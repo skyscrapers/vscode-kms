@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-kms" extension will be documented in this file.
 
+## 0.5.0
+
+Updates the AWS SDK and the development dependencies to fix known vulnerabilities. The AWS SDK now needs Node.js 20, so the extension requires VS Code 1.90 or later.
+
 ## 0.4.1
 
 Cleanup of deprecated activationEvents.
